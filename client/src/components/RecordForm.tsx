@@ -25,16 +25,18 @@ const RecordForm = () => {
   const [account, setAccount] = useState<string>("");
   const [category, setCategory] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<string>("");
-  const [historicalData, setHistoricalData] = useState([]);
+  const historicalData: string[] = [];
+
 
   const { user } = useUser();
 
   const handleSubmit = async (event: React.FormEvent) => {
 
-
-
+    setLoading(true);
+    console.log(loading);
     console.log(user, typeof(user));
     event.preventDefault();
+
     let risk;
     const newRecord = {
       userId: user?.fullName ?? "",
@@ -46,7 +48,7 @@ const RecordForm = () => {
       paymentMethod: paymentMethod,
       historicalRecords: historicalData,
     };
-    setLoading(true);
+    
 
     
     try {
@@ -80,11 +82,11 @@ const RecordForm = () => {
     setAccount("");
     setCategory("");
     setPaymentMethod("");
-    setLoading(false);
+    setTimeout(() => setLoading(false), 1000);    
   };
 
   return (
-    <Container sx={{marginBottom:6, marginTop:4, width:"72vw"}}>
+    <Container sx={{marginBottom:3, marginTop:4, width:"72vw"}}>
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
           <Grid item xs={12}>

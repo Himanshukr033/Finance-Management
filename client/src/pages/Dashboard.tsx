@@ -12,7 +12,7 @@ const Dashboard = () => {
     </SignedOut>
       <h1 style={{textAlign:"center", margin:5}}> Welcome {user?.firstName}! Here Are Your Finances:</h1>
       <RecordForm/>
-      <RecordList userId={user?.fullName}/>
+      <RecordList/>
     </div>
   );
 };

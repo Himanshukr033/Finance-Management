@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import {useState, useEffect } from 'react';
 import axios from 'axios';
 import {
   TableContainer,
@@ -19,12 +19,25 @@ import { useLoadingContext } from '../context/LoadingContext.tsx';
 import { useUser } from '@clerk/clerk-react';
 const url  = import.meta.env.VITE_URL;
 
-const RecordList = ({ name }) => {
+interface RecordType {
+  userId:string,
+  description: string;
+  amount: number;
+  category: string;
+  paymentMethod: string;
+  date: string;
+  risk: string;
+}
+
+
+const RecordList = () => {
   const { loading, setLoading } = useLoadingContext();
-  const [records, setRecords] = useState([]);
-  const [error, setError] = useState(null);
-  const [editableRowIndex, setEditableRowIndex] = useState(null);
-  const [editedRecord, setEditedRecord] = useState({});
+  const [records, setRecords] = useState<RecordType[]>([]);
+
+  const [error, setError] = useState<string | null>(null);
+  const [editableRowIndex, setEditableRowIndex] = useState<number | null>(null);
+  const [editedRecord, setEditedRecord] = useState<Partial<RecordType>>({});
+  
   const { user } = useUser();
 
   const id = user?.fullName??"";
@@ -36,8 +49,12 @@ const RecordList = ({ name }) => {
       try {
         const response = await axios.post(`${url}/getRecords`, { userId: id });
         setRecords(response.data);
-      } catch (error) {
-        setError(error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError('An unknown error occurred.');
+        }
       }
       setLoading(false);
     };
@@ -45,50 +62,43 @@ const RecordList = ({ name }) => {
     fetchData();
   }, [id, loading, setLoading]);
 
-  const handleEdit = (index, record) => {
+  const handleEdit = (index: number, record: RecordType) => {
     setEditableRowIndex(index);
     setEditedRecord({ ...record });
   };
+  
 
   const handleSave = async () => {
-    setLoading(true);
-    let newRisk;
+    setLoading(true); 
     try {
-      newRisk = await axios.post(`${url}/findRisk`, editedRecord);
-      editedRecord.risk = newRisk;
-      console.log(editedRecord.risk);
-      console.log(newRisk);
-    } catch (err) {
-      console.error(err);
-    }
-
-    try {
-      // Update record via API call
       await axios.put(`${url}/updateRecords`, editedRecord);
-      console.log(editedRecord);
+
       
-      // Update local records state
       const updatedRecords = [...records];
-      updatedRecords[editableRowIndex] = editedRecord;
-      setRecords(updatedRecords);
-      
-      // Reset editable state
+      if (editableRowIndex !== null && editableRowIndex >= 0 && editableRowIndex < records.length) {
+        updatedRecords[editableRowIndex] = { ...updatedRecords[editableRowIndex], ...editedRecord };
+        setRecords(updatedRecords);
+      }
+
       setEditableRowIndex(null);
       setEditedRecord({});
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error updating record:', error);
-      setError(error.message);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred.');
+      }
     }
-    setLoading(false);
+    setLoading(false); 
   };
 
   const handleCancel = () => {
-    // Reset editable state
     setEditableRowIndex(null);
     setEditedRecord({});
   };
 
-  const handleDelete = async (recordId, date) => {
+  const handleDelete = async (recordId:string, date:string) => {
     setLoading(true);
     try {
       // Delete record via API call
@@ -97,17 +107,21 @@ const RecordList = ({ name }) => {
       
       // Update local records state after deletion
       setRecords(records.filter(record => record.userId !== recordId || record.date !== date));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error deleting record:', error);
-      setError(error.message);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('An unknown error occurred.');
+      }
     }
     setLoading(false);
   };
 
-  const handleInputChange = (e, field) => {
+  const handleInputChange = (value: number | string, field: string) => {
     setEditedRecord({
       ...editedRecord,
-      [field]: e.target.value
+      [field]: value
     });
   };
 
@@ -120,7 +134,7 @@ const RecordList = ({ name }) => {
   }
 
   return (
-    <div style={{ maxHeight: '40vh', overflowY: 'auto' }}>
+    <div style={{ maxHeight: '38vh', overflowY: 'auto' }}>
       <TableContainer component={Paper} sx={{width:"70vw", margin:'auto'}}>
         <Table stickyHeader aria-label="sticky table" sx={{bgcolor:'whitesmoke'}}>
           <TableHead sx={{bgcolor:'black'}}>
@@ -141,7 +155,7 @@ const RecordList = ({ name }) => {
                   {editableRowIndex === index ? (
                     <TextField
                       value={editedRecord.description || ''}
-                      onChange={(e) => handleInputChange(e, 'description')}
+                      onChange={(e) => handleInputChange(e.target.value, 'description')}
                     />
                   ) : (
                     record.description
@@ -152,7 +166,7 @@ const RecordList = ({ name }) => {
                     <TextField
                       type="number"
                       value={editedRecord.amount || ''}
-                      onChange={(e) => handleInputChange(e, 'amount')}
+                      onChange={(e) => handleInputChange(e.target.value, 'amount')}
                     />
                   ) : (
                     record.amount
@@ -162,7 +176,7 @@ const RecordList = ({ name }) => {
                   {editableRowIndex === index ? (
                     <Select
                       value={editedRecord.category || ''}
-                      onChange={(e) => handleInputChange(e, 'category')}
+                      onChange={(e) => handleInputChange(e.target.value, 'category')}
                     >
                       <MenuItem value="Food">Food</MenuItem>
                       <MenuItem value="Rent">Rent</MenuItem>
@@ -179,7 +193,7 @@ const RecordList = ({ name }) => {
                   {editableRowIndex === index ? (
                     <Select
                       value={editedRecord.paymentMethod || ''}
-                      onChange={(e) => handleInputChange(e, 'paymentMethod')}
+                      onChange={(e) => handleInputChange(e.target.value, 'paymentMethod')}
                     >
                       <MenuItem value="Credit Card">Credit Card</MenuItem>
                       <MenuItem value="Cash">Cash</MenuItem>
@@ -196,7 +210,7 @@ const RecordList = ({ name }) => {
                   {editableRowIndex === index ? (
                     <TextField
                       value={editedRecord.risk || ''}
-                      onChange={(e) => handleInputChange(e, 'risk')}
+                      onChange={(e) => handleInputChange(e.target.value, 'risk')}
                     />
                   ) : (
                     record.risk
