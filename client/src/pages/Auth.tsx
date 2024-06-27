@@ -6,7 +6,8 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/clerk-react";
-
+import { Navigate } from "react-router-dom";
+import "../App.css";
 const Auth = () => {
   return (
     <div className="sign-in-container">
@@ -16,9 +17,8 @@ const Auth = () => {
     </SignedOut>
 
     <SignedIn>
-        {/* <UserButton/> */}
-        <h1>hat bc</h1>
-    </SignedIn>
+        <Navigate to="/" />
+     </SignedIn>
     </div>
     );
 };

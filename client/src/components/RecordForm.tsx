@@ -1,35 +1,90 @@
 import React, { useState } from 'react';
-import { TextField, Button, FormControl, InputLabel, Select, MenuItem, Container, Grid } from '@mui/material';
+import {
+  Container,
+  Grid,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+} from '@mui/material';
 import { useUser } from "@clerk/clerk-react";
+import axios from 'axios';
+import { useLoadingContext } from '../context/LoadingContext.tsx';
+
+
+const url  = import.meta.env.VITE_URL;
+
+
 
 const RecordForm = () => {
+  const { loading, setLoading } = useLoadingContext();
   const [description, setDescription] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
+  const [account, setAccount] = useState<string>("");
   const [category, setCategory] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [historicalData, setHistoricalData] = useState([]);
 
   const { user } = useUser();
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
+
+
+
+    console.log(user, typeof(user));
     event.preventDefault();
+    let risk;
     const newRecord = {
-      userId: user?.id ?? "",
-      date: new Date(),
+      userId: user?.fullName ?? "",
+      date: new Date().toLocaleString(),
       description: description,
-      amount: parseFloat(amount),
+      account: account,
+      amount: parseInt(amount),
       category: category,
       paymentMethod: paymentMethod,
+      historicalRecords: historicalData,
     };
+    setLoading(true);
 
-    // addRecord(newRecord);
+    
+    try {
+      risk = await axios.post(`${url}/findRisk`, newRecord);
+      console.log(risk.data);
+    } catch (err) {
+      console.error(err);
+    }
+    
+    const updatedRecord = {
+      userId: user?.fullName ?? "",
+      date: new Date().toLocaleString(),
+      description: description,
+      account: account,
+      amount: parseInt(amount),
+      category: category,
+      paymentMethod: paymentMethod,
+      risk:risk,
+
+    };
+    try {
+      const response = await axios.post(`${url}/postRecords`, updatedRecord);
+      console.log(response.data);
+    } catch (err) {
+      console.error(err);
+    }
+   
+
     setDescription("");
     setAmount("");
+    setAccount("");
     setCategory("");
     setPaymentMethod("");
+    setLoading(false);
   };
 
   return (
-    <Container maxWidth="sm">
+    <Container sx={{marginBottom:6, marginTop:4, width:"72vw"}}>
       <form onSubmit={handleSubmit}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -40,6 +95,20 @@ const RecordForm = () => {
               fullWidth
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              size="small"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              label="Account"
+              type="number"
+              variant="outlined"
+              required
+              fullWidth
+              value={account}
+              onChange={(e) => setAccount(e.target.value)}
+              inputProps={{ min: 0 }}
+              size="small"
             />
           </Grid>
           <Grid item xs={12}>
@@ -52,10 +121,11 @@ const RecordForm = () => {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               inputProps={{ min: 0 }}
+              size="small"
             />
           </Grid>
           <Grid item xs={12}>
-            <FormControl variant="outlined" fullWidth required>
+            <FormControl variant="outlined" fullWidth required size="small">
               <InputLabel>Category</InputLabel>
               <Select
                 value={category}
@@ -73,7 +143,7 @@ const RecordForm = () => {
             </FormControl>
           </Grid>
           <Grid item xs={12}>
-            <FormControl variant="outlined" fullWidth required>
+            <FormControl variant="outlined" fullWidth required size="small">
               <InputLabel>Payment Method</InputLabel>
               <Select
                 value={paymentMethod}
@@ -97,4 +167,5 @@ const RecordForm = () => {
     </Container>
   );
 };
+
 export default RecordForm;
